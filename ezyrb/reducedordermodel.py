@@ -168,7 +168,7 @@ class ReducedOrderModel():
 
         return rom
 
-    def test_error(self, test, norm=np.linalg.norm):
+    def test_error(self, test, norm=np.linalg.norm, relative=True):
         """
         Compute the mean norm of the relative error vectors of predicted
         test snapshots.
@@ -177,16 +177,24 @@ class ReducedOrderModel():
         :param function norm: the function used to assign at the vector of
             errors a float number. It has to take as input a 'numpy.ndarray'
             and returns a float. Default value is the L2 norm.
+        :param relative: True if the error computed is relative. Default is 
+            True. 
         :return: the mean L2 norm of the relative errors of the estimated
             test snapshots.
         :rtype: numpy.ndarray
         """
         predicted_test = self.predict(test.parameters_matrix)
-        return np.mean(
-            norm(predicted_test.snapshots_matrix - test.snapshots_matrix,
-            axis=1) / norm(test.snapshots_matrix, axis=1))
+        if relative:
+            return np.mean(
+                norm(predicted_test.snapshots_matrix - test.snapshots_matrix,
+                axis=1) / norm(test.snapshots_matrix, axis=1))
+        else:
+            return np.mean(
+                norm(predicted_test.snapshots_matrix - test.snapshots_matrix,
+                axis=1))
 
-    def kfold_cv_error(self, n_splits, *args, norm=np.linalg.norm, **kwargs):
+    def kfold_cv_error(self, n_splits, *args, norm=np.linalg.norm, relative=True, 
+                       **kwargs):
         r"""
         Split the database into k consecutive folds (no shuffling by default).
         Each fold is used once as a validation while the k - 1 remaining folds
@@ -198,6 +206,8 @@ class ReducedOrderModel():
         :param function norm: function to apply to compute the relative error
             between the true snapshot and the predicted one.
             Default value is the L2 norm.
+        :param relative: True if the error computed is relative. Default is 
+            True. 
         :param \*args: additional parameters to pass to the `fit` method.
         :param \**kwargs: additional parameters to pass to the `fit` method.
         :return: the vector containing the errors corresponding to each fold.
@@ -211,7 +221,7 @@ class ReducedOrderModel():
                              copy.deepcopy(self.approximation)).fit(
                                  *args, **kwargs)
 
-            error.append(rom.test_error(self.database[test_index], norm))
+            error.append(rom.test_error(self.database[test_index], norm, relative))
 
         return np.array(error)
 
